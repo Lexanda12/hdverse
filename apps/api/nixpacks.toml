@@ -1,0 +1,20 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "chromium", "nss", "freetype", 
+           "harfbuzz", "ca-certificates", "ttf-dejavu"]
+
+[phases.install]
+cmds = ["npm install --legacy-peer-deps"]
+
+[phases.build]
+cmds = [
+  "npx prisma generate --schema=apps/api/src/prisma/schema.prisma",
+  "npm run build --workspace=apps/api"
+]
+
+[start]
+cmd = "node apps/api/dist/index.js"
+
+[variables]
+PUPPETEER_SKIP_DOWNLOAD = "true"
+PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium"
+NODE_ENV = "production"

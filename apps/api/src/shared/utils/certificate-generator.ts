@@ -497,10 +497,12 @@ export async function generateCertificatePDF(
 
   let browser;
   try {
-    const isWindows = process.platform === 'win32';
-    const localChrome = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-    const launchOptions: any = {
+    browser = await puppeteer.launch({
       headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH 
+        || (process.platform === 'win32'
+          ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+          : undefined),
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -508,14 +510,9 @@ export async function generateCertificatePDF(
         '--disable-gpu',
         '--no-first-run',
         '--no-zygote',
+        '--single-process',
       ],
-    };
-
-    if (isWindows && require('fs').existsSync(localChrome)) {
-      launchOptions.executablePath = localChrome;
-    }
-
-    browser = await puppeteer.launch(launchOptions);
+    });
 
     const page = await browser.newPage();
 

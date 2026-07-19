@@ -1,0 +1,31 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build check
+        run: npm run build --workspaces --if-present
+        env:
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+          VITE_API_URL: https://placeholder.railway.app
+
+      - name: Notify deployment
+        run: |
+          echo "✅ Build passed — Railway and Vercel will auto-deploy from this push"

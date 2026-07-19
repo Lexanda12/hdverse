@@ -33,12 +33,28 @@ app.use(
 
 // Apply security middleware
 app.use(helmet());
-app.use(
-  cors({
-    origin: config.FRONTEND_URL,
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowed = [
+      config.FRONTEND_URL,
+      'http://localhost:5173',
+      'http://localhost:3000',
+    ].filter(Boolean);
+
+    // Allow requests with no origin (mobile apps, 
+    // Postman, Railway health checks)
+    if (!origin || allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 
+            'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization',
+                   'x-paystack-signature'],
+}));
 
 // Parsers
 app.use(cookieParser());
@@ -57,10 +73,13 @@ if (config.AWS_ACCESS_KEY_ID === 'dummy_aws_key') {
 
 
 // Health Check Endpoint
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
-    timestamp: new Date(),
+    service: 'HD Verse API',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
   });
 });
 

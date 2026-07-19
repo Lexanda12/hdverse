@@ -1,8 +1,28 @@
-node_modules
+# Environment files
 .env
-dist
+.env.local
+.env.*.local
+apps/api/.env
+apps/web/.env.local
+
+# Puppeteer cache
+.puppeteer-cache
+apps/api/.puppeteer-cache
+
+# Build outputs
+node_modules/
+dist/
+apps/api/dist/
+apps/web/dist/
+.turbo/
+.vercel/
+
+# Test files (don't ship to production)
+apps/api/src/test-*.ts
+apps/api/test-certificate.pdf
+coverage/
+
+# OS
 .DS_Store
+Thumbs.db
 *.log
-coverage
-.turbo
-.vercel
