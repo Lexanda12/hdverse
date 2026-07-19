@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Epilogue:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg-base: #1B1F34;
+  --color-bg-card: #2B2D3A;
+  --gradient-brand: linear-gradient(135deg, #C903D0 0%, #A102A6 40%, #650268 75%, #140015 100%);
+  --gradient-brand-soft: linear-gradient(135deg, #C903D0 0%, #8D0292 100%);
+  --gradient-brand-glow: radial-gradient(ellipse at center, rgba(201,3,208,0.25) 0%, transparent 70%);
+}
+
+body {
+  background-color: #1B1F34;
+  color: #FFFFFF;
+  font-family: 'Epilogue', 'Inter', sans-serif;
+  margin: 0;
+}

@@ -1,0 +1,277 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String           @id @default(cuid())
+  email              String           @unique
+  passwordHash       String
+  fullName           String
+  phone              String           @unique
+  phoneVerified      Boolean          @default(false)
+  kycStatus          KycStatus        @default(PENDING)
+  kycTier            Int              @default(0)
+  subscriptionTier   SubscriptionTier @default(FREE)
+  subscriptionEndsAt DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  works         Work[]
+  payments      Payment[]
+  refreshTokens RefreshToken[]
+  walletTransactions WalletTransaction[]
+
+
+  @@index([email])
+  @@index([phone])
+}
+
+model Work {
+  id          String @id @default(cuid())
+  userId      String
+  user        User   @relation(fields: [userId], references: [id])
+
+  title       String
+  artistName  String
+  genre       String?
+  yearCreated Int?
+  coCreators  String?
+
+  s3Key         String  @unique
+  s3Bucket      String
+  fileName      String
+  fileSizeBytes BigInt
+  mimeType      String
+  fileHash      String  @unique
+
+  isrc              String    @unique
+  timestampToken    String?
+  timestampedAt     DateTime?
+  certificateS3Key  String?
+
+  acrcloudId        String?           @unique
+  fingerprintStatus FingerprintStatus @default(PENDING)
+  fingerprintedAt   DateTime?
+
+  status    WorkStatus @default(PROCESSING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  certificate     Certificate?
+  detectionAlerts DetectionAlert[]
+  payments        Payment[]
+  splitSheet      SplitSheet?
+
+
+  @@index([userId])
+  @@index([fileHash])
+  @@index([isrc])
+  @@index([acrcloudId])
+}
+
+model Certificate {
+  id     String @id @default(cuid())
+  workId String @unique
+  work   Work   @relation(fields: [workId], references: [id])
+
+  certificateNumber String   @unique
+  s3Key             String   @unique
+  verificationUrl   String   @unique
+  issuedAt          DateTime @default(now())
+
+  @@index([certificateNumber])
+  @@index([verificationUrl])
+}
+
+model DetectionAlert {
+  id     String @id @default(cuid())
+  workId String
+  work   Work   @relation(fields: [workId], references: [id])
+
+  platform        String
+  detectedAt      DateTime
+  matchConfidence String
+  sourceUrl       String?
+  rawResponse     Json
+
+  notifiedAt DateTime?
+  status     AlertStatus @default(NEW)
+  createdAt  DateTime    @default(now())
+
+  @@index([workId])
+  @@index([status])
+}
+
+model Payment {
+  id     String  @id @default(cuid())
+  userId String
+  user   User    @relation(fields: [userId], references: [id])
+  workId String?
+  work   Work?   @relation(fields: [workId], references: [id])
+
+  flutterwaveRef String        @unique
+  amount         Decimal       @db.Decimal(10, 2)
+  currency       String        @default("USD")
+  type           PaymentType
+  status         PaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([flutterwaveRef])
+  @@index([status])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum SubscriptionTier {
+  FREE
+  BASIC
+  PRO
+}
+
+enum WorkStatus {
+  PROCESSING
+  ACTIVE
+  FAILED
+}
+
+enum FingerprintStatus {
+  PENDING
+  REGISTERED
+  FAILED
+}
+
+enum AlertStatus {
+  NEW
+  NOTIFIED
+  REVIEWED
+}
+
+enum PaymentType {
+  CERTIFICATE
+  SUBSCRIPTION_BASIC
+  SUBSCRIPTION_PRO
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model SplitSheet {
+  id              String           @id @default(cuid())
+  workId          String           @unique
+  work            Work             @relation(fields: [workId], references: [id])
+  totalPercentage Int              @default(0)
+  status          SplitSheetStatus @default(DRAFT)
+  lockedAt        DateTime?
+  lockedHash      String?          // SHA-256 of all confirmed splits
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  entries         SplitSheetEntry[]
+
+  @@index([workId])
+  @@index([status])
+}
+
+model SplitSheetEntry {
+  id                String             @id @default(cuid())
+  splitSheetId      String
+  splitSheet        SplitSheet         @relation(fields: [splitSheetId], references: [id])
+  collaboratorName  String
+  collaboratorEmail String
+  collaboratorId    String?            // HD Verse userId if registered
+  percentage        Int                // whole numbers only, e.g. 50 = 50%
+  confirmationToken String             @unique @default(cuid())
+  confirmationStatus ConfirmationStatus @default(PENDING)
+  confirmedAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([splitSheetId])
+  @@index([confirmationToken])
+  @@index([collaboratorEmail])
+}
+
+enum SplitSheetStatus {
+  DRAFT
+  PENDING_CONFIRMATION
+  LOCKED
+}
+
+enum ConfirmationStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
+
+model WalletTransaction {
+  id                  String                @id @default(cuid())
+  userId              String
+  user                User                  @relation(fields: [userId], references: [id])
+  type                WalletTransactionType
+  direction           TransactionDirection  // CREDIT or DEBIT
+  amount              Decimal               @db.Decimal(10, 2)
+  currency            String                @default("NGN")
+  description         String
+  reference           String?               @unique
+  bankCode            String?
+  accountNumber       String?
+  accountName         String?
+  status              WalletTxStatus        @default(PENDING)
+  paystackTransferCode String?              @unique
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([direction])
+  @@index([reference])
+}
+
+enum WalletTransactionType {
+  CERTIFICATE_FEE
+  SUBSCRIPTION_FEE
+  DISTRIBUTION_FEE
+  PAYOUT
+  REFUND
+}
+
+enum TransactionDirection {
+  CREDIT
+  DEBIT
+}
+
+enum WalletTxStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+
