@@ -7,6 +7,7 @@ import { CertificatePipelineJobData } from '../../jobs/job-types';
 import { logger } from '../../shared/utils/logger';
 import { InitiateUploadInput } from './works.schema';
 import { config } from '../../shared/config/env';
+import type { Work } from '@prisma/client';
 
 export class WorksService {
   async initiateUpload(userId: string, input: InitiateUploadInput) {
@@ -155,7 +156,7 @@ export class WorksService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return works.map(w => ({
+    return works.map((w: Work) => ({
       ...w,
       fileSizeBytes: Number(w.fileSizeBytes),
     }));

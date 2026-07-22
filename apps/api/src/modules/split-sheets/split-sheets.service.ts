@@ -5,6 +5,7 @@ import { prisma } from '../../lib/prisma';
 import { sendSplitSheetConfirmationEmail } from '../../lib/email';
 import { logger } from '../../shared/utils/logger';
 import { config } from '../../shared/config/env';
+import type { SplitSheetEntry } from '@prisma/client';
 import type { CreateSplitSheetInput } from './split-sheets.schema';
 
 export const splitSheetsService = {
@@ -89,7 +90,7 @@ export const splitSheetsService = {
 
     // Send confirmation emails to all collaborators
     await Promise.allSettled(
-      splitSheet.entries.map(async (entry) => {
+      splitSheet.entries.map(async (entry: SplitSheetEntry) => {
         const confirmUrl = 
           `${config.FRONTEND_URL}/split-sheets/confirm/${entry.confirmationToken}`;
         
@@ -216,10 +217,10 @@ export const splitSheetsService = {
       workId: splitSheet.workId,
       lockedAt: new Date().toISOString(),
       entries: splitSheet.entries
-        .sort((a, b) => 
+        .sort((a: SplitSheetEntry, b: SplitSheetEntry) => 
           a.collaboratorEmail.localeCompare(b.collaboratorEmail)
         )
-        .map(e => ({
+        .map((e: SplitSheetEntry) => ({
           name: e.collaboratorName,
           email: e.collaboratorEmail,
           percentage: e.percentage,
